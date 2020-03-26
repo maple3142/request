@@ -5,7 +5,6 @@ import { ParsedUrlQueryInput, stringify } from 'querystring'
 import { request as httpRequest } from 'http'
 import { request as httpsRequest } from 'https'
 import produce, { immerable } from 'immer'
-import ReadableStreamClone from 'readable-stream-clone'
 import FormData = require('form-data')
 
 export class Headers {
@@ -178,19 +177,15 @@ export class Request {
 			if (
 				this._method !== HttpMethods.GET &&
 				this._method !== HttpMethods.HEAD &&
+				this._method !== HttpMethods.OPTIONS &&
 				this._body
 			) {
 				const origBody = this._body
 				if (Buffer.isBuffer(origBody)) {
-					const stream = new Readable({
-						read(size) {
-							this.push(origBody)
-							this.push(null)
-						}
-					})
-					stream.pipe(request)
+					request.write(origBody)
+					request.end()
 				} else {
-					new ReadableStreamClone(origBody).pipe(request)
+					origBody.pipe(request)
 				}
 			} else {
 				request.end()

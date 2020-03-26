@@ -1,4 +1,7 @@
+import { URL } from 'url'
 import { Request } from '../src/request'
+import { Readable } from 'stream'
+import { stream2buffer } from './utils'
 
 test('Set query', () => {
 	const req = new Request('http://localhost/test').query({
@@ -16,6 +19,12 @@ test('Set query again will overwrite it', () => {
 		})
 	expect(req.url().href).toBe('http://localhost/test?b=1')
 })
+test('Set url using URL', () => {
+	const req = new Request(new URL('http://localhost/test?b=1')).url(
+		new URL('http://localhost/foo')
+	)
+	expect(req.url().href).toBe('http://localhost/foo')
+})
 test('Set url after Set query will clear it', () => {
 	const req = new Request('http://localhost/test')
 		.query({
@@ -32,15 +41,23 @@ test('Set method to HEAD using method()', () => {
 	const req = new Request('http://localhost/test').method('head')
 	expect(req.method()).toBe('HEAD')
 })
+test('Set invalid method should throw', () => {
+	expect(() =>
+		new Request('https://localhost/test').method('aaa')
+	).toThrowError(new TypeError('Unsupported HTTP method: AAA'))
+})
 test('Set header should work and ignore case', () => {
-	const req = new Request('http://localhost/test').header('X-Test', '123')
+	const req = new Request('http://localhost/test')
+		.get()
+		.header('X-Test', '123')
 	expect(req.header('x-test')).toBe('123')
 })
 test('Set header to null should delete it', () => {
 	const req = new Request('http://localhost/test')
+		.options()
 		.header('X-Test', '123')
 		.header('X-Test', null)
-	expect(req.header('x-test')).toBeUndefined()
+	expect(req.header()).toStrictEqual({})
 })
 test('Set header to array should work', () => {
 	const req = new Request('http://localhost/test').header('X-Test', [
@@ -82,6 +99,17 @@ test('Set form body', () => {
 	const buf = req.body()
 	expect(buf.toString('utf-8')).toContain('name="foo"')
 	expect(req.header('content-type')).toContain('multipart/form-data')
+})
+test('Set stream body', async () => {
+	const stream = new Readable({
+		read(size) {
+			this.push('hello')
+			this.push(null)
+		}
+	})
+	const req = new Request('http://localhost/test').body(stream)
+	const buf = await stream2buffer(req.body() as Readable)
+	expect(buf.toString()).toBe('hello')
 })
 test('Request should be immutable', () => {
 	const req1 = new Request('http://localhost/test').header(
