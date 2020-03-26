@@ -9,7 +9,7 @@ import ReadableStreamClone from 'readable-stream-clone'
 import FormData = require('form-data')
 
 export class Headers {
-	[key: string]: string
+	[key: string]: string | string[] | undefined
 }
 export enum HttpMethods {
 	GET = 'GET',
@@ -92,17 +92,22 @@ export class Request {
 		})
 	}
 	header(): Headers
-	header(key: string): string
-	header(key: string, value: string | null): Request
+	header(key: string): string | string[] | undefined
+	header(key: string, value: string | string[] | null): Request
 	header(newHeaders: Headers): Request
 	header(
 		arg1?: string | Headers,
-		arg2?: string | null
-	): Request | Headers | string {
+		arg2?: string | string[] | null
+	): Request | Headers | string | string[] | undefined {
 		if (typeof arg1 === 'undefined' && typeof arg2 === 'undefined') {
 			return this._headers
 		} else if (typeof arg1 === 'string' && typeof arg2 === 'undefined') {
 			return this._headers[arg1.toLowerCase()]
+		} else if (typeof arg1 === 'string' && Array.isArray(arg2)) {
+			// per http spec, duplicate header name is allowed
+			return produce(this, s => {
+				s._headers[arg1.toLowerCase()] = arg2
+			})
 		} else if (typeof arg1 === 'string' && typeof arg2 !== 'undefined') {
 			const key = arg1.toLowerCase()
 			const value = arg2

@@ -1,5 +1,4 @@
 import { Request } from '../src/request'
-import FormData = require('form-data')
 
 test('Set query', () => {
 	const req = new Request('http://localhost/test').query({
@@ -43,6 +42,13 @@ test('Set header to null should delete it', () => {
 		.header('X-Test', null)
 	expect(req.header('x-test')).toBeUndefined()
 })
+test('Set header to array should work', () => {
+	const req = new Request('http://localhost/test').header('X-Test', [
+		'foo',
+		'bar'
+	])
+	expect(req.header('x-test')).toEqual(['foo', 'bar'])
+})
 test('Set string body', () => {
 	const req = new Request('http://localhost/test').put().body('body')
 	expect(req.method()).toBe('PUT')
@@ -52,7 +58,7 @@ test('Set buffer body', () => {
 	const buf = Buffer.from([1, 2, 3])
 	const req = new Request('http://localhost/test').post().body(buf)
 	expect(req.method()).toBe('POST')
-	expect((<Buffer>req.body()).equals(buf)).toBe(true)
+	expect((req.body() as Buffer).equals(buf)).toBe(true)
 })
 test('Set json body', () => {
 	const data = { foo: 'bar' }
@@ -96,6 +102,7 @@ test('Request should be immutable', () => {
 		.post()
 		.url('/api/post')
 		.json(data)
+
 	expect(req1.url().href).toBe('http://localhost/test')
 	expect(req1.header('X-Password')).toBe('hunter2')
 

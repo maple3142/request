@@ -17,6 +17,7 @@ export default (): Promise<Mock> => {
 		if (!u.pathname) return
 		if (typeof callbacks[u.pathname] === 'function') {
 			callbacks[u.pathname]([request, response])
+			delete callbacks[u.pathname]
 		}
 	})
 	const waitFor = (
